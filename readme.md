@@ -1,0 +1,1 @@
+A set of Python scripts to automate some of the tedious tasks I face when syncing a redundant Ableton Live rig for live performance.
