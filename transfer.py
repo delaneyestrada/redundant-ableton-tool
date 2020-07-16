@@ -1,6 +1,9 @@
 import paramiko
 import os
+from notify_run import Notify
+import time
 
+# MODIFY SFTPClient TO ALLOW DIRECTORY TRANSFERS
 class MySFTPClient(paramiko.SFTPClient):
     def put_dir(self, source, target):
         ''' Uploads the contents of the source directory to the target path. The
@@ -24,15 +27,56 @@ class MySFTPClient(paramiko.SFTPClient):
             else:
                 raise
 
+# VARIABLES
 hostname = "DE-LAPTOP"
 username = 'dillon.estrada55@gmail.com'
-source_path = 'D:/Dillon Estrada/Documents/Ableton'
-target_path = 'C:/users/dillo/test/test'
+timestr = time.strftime("%y%m%d-%H%M%S")
+source_path = 'D:/Dillon Estrada/TEST'
+target_path = 'C:/users/dillo/documents/TEST' + timestr
 password=input("Remote computer password: ")
 
+pstools = r'D:\Dillon Estrada\Code\Tools\PSTools'
+command = r'psexec \\DE-Laptop -u dillon.estrada55@gmail.com -p ' + password + r' -h -i -d cmd /c start "C:\ProgramData\Ableton\Live 10 Standard\Program\Ableton Live 10 Standard.exe" "C:\Users\dillo\Documents\Ableton\Kyle Park Project\KP Show Copy.als"'
+
+# GET ENDPOINT FROM TXT FILE
+f = open("endpoint.txt", "r")
+endpoint = f.read()
+f.close()
+
+notify = Notify(endpoint=endpoint)
+
+#FILE TRANSFER
 transport = paramiko.Transport((hostname, 22))
 transport.connect(username=username, password=password)
 sftp = MySFTPClient.from_transport(transport)
 sftp.mkdir(target_path, ignore_existing=True)
 sftp.put_dir(source_path, target_path)
 sftp.close()
+
+'''
+# CHECK IF TRANSFERRED DIRECTORY EXISTS
+ssh = paramiko.SSHClient()
+ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+ssh.connect(hostname=hostname,username=username,password=password)
+
+stdin, stdout, stderror = ssh.exec_command('[ -d '+ target_path + ' ] && echo exists || echo does not exist')
+
+while not stdout.channel.exit_status_ready() and not stdout.channel.recv_ready():
+    time.sleep(1)
+
+    stdoutstring = stdout.readlines()
+    stderrstring = stderror.readlines()
+
+    for stdoutrow in stdoutstring:
+        print(stdoutrow)
+
+    for stderr_row in stderrstring:
+        print(stderr_row)    
+'''
+
+# OPEN ABLETON
+os.chdir(pstools)
+os.system(command)
+
+# SEND ANDROID NOTIFICATION
+notify.send('File Transfer Script has run successfully')
