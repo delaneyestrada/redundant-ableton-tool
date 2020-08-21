@@ -2,6 +2,7 @@ import paramiko
 import os
 from notify_run import Notify
 import time
+from data import keys
 
 # MODIFY SFTPClient TO ALLOW DIRECTORY TRANSFERS
 class MySFTPClient(paramiko.SFTPClient):
@@ -28,15 +29,15 @@ class MySFTPClient(paramiko.SFTPClient):
                 raise
 
 # VARIABLES
-hostname = "DE-LAPTOP"
-username = 'dillon.estrada55@gmail.com'
+hostname = "LAPTOP-DANIEL"
+username = "daniel_clanton@hotmail.com"
 timestr = time.strftime("%y%m%d-%H%M%S")
-source_path = 'D:/Dillon Estrada/TEST'
-target_path = 'C:/users/dillo/documents/TEST' + timestr
-password=input("Remote computer password: ")
+source_path = r'C:\Users\dillo\Desktop\Kyle Park Project'
+target_path = r'C:/Users/danie/desktop/Kyle Park Project' + timestr
+password=keys['password']
 
-pstools = r'D:\Dillon Estrada\Code\Tools\PSTools'
-command = r'psexec \\DE-Laptop -u dillon.estrada55@gmail.com -p ' + password + r' -h -i -d cmd /c start "C:\ProgramData\Ableton\Live 10 Standard\Program\Ableton Live 10 Standard.exe" "C:\Users\dillo\Documents\Ableton\Kyle Park Project\KP Show Copy.als"'
+pstools = r'C:\Users\dillo\Desktop\CODE\Tools\PSTools'
+command = r'psexec \\' + hostname + r' -u ' +  username +  r' -p ' + password + r' -h -i -d cmd /c start "C:\ProgramData\Ableton\Live 10 Standard\Program\Ableton Live 10 Standard.exe" "C:\Users\danie\Desktop\Kyle Park Project' + timestr + r'\KP Show Copy.als"'
 
 # GET ENDPOINT FROM TXT FILE
 f = open("endpoint.txt", "r")
@@ -48,10 +49,21 @@ notify = Notify(endpoint=endpoint)
 #FILE TRANSFER
 transport = paramiko.Transport((hostname, 22))
 transport.connect(username=username, password=password)
+print('Connected successfully...')
 sftp = MySFTPClient.from_transport(transport)
 sftp.mkdir(target_path, ignore_existing=True)
+print('Transferring files...')
 sftp.put_dir(source_path, target_path)
+print('Successfully transferred!')
 sftp.close()
+
+# OPEN ABLETON
+os.chdir(pstools)
+os.system(command)
+
+# SEND ANDROID NOTIFICATION
+notify.send('File Transfer Script has run successfully')
+
 
 '''
 # CHECK IF TRANSFERRED DIRECTORY EXISTS
@@ -73,10 +85,3 @@ while not stdout.channel.exit_status_ready() and not stdout.channel.recv_ready()
     for stderr_row in stderrstring:
         print(stderr_row)    
 '''
-
-# OPEN ABLETON
-os.chdir(pstools)
-os.system(command)
-
-# SEND ANDROID NOTIFICATION
-notify.send('File Transfer Script has run successfully')
